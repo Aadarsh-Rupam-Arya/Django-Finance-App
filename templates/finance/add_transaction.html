@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Transaction - Finance Manager{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="fas fa-plus me-2"></i>Add New Transaction</h4>
+            </div>
+            <div class="card-body">
+                <form method="post" id="transactionForm">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.type.id_for_label }}" class="form-label">Transaction Type</label>
+                        {{ form.type }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.category.id_for_label }}" class="form-label">Category</label>
+                        {{ form.category }}
+                        <div class="form-text">Categories are filtered based on transaction type</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.amount.id_for_label }}" class="form-label">Amount</label>
+                        <div class="input-group">
+                            <span class="input-group-text">₹</span>
+                            {{ form.amount }}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
+                        {{ form.description }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.date.id_for_label }}" class="form-label">Date</label>
+                        {{ form.date }}
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>Save Transaction
+                        </button>
+                        <a href="{% url 'transactions' %}" class="btn btn-secondary">
+                            <i class="fas fa-times me-1"></i>Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const typeSelect = document.getElementById('id_type');
+    const categorySelect = document.getElementById('id_category');
+    
+    // Store all categories
+    const allCategories = Array.from(categorySelect.options).map(option => ({
+        value: option.value,
+        text: option.text,
+        type: option.text.includes('(income)') ? 'income' : 'expense'
+    }));
+    
+    function filterCategories() {
+        const selectedType = typeSelect.value;
+        
+        // Clear current options
+        categorySelect.innerHTML = '<option value="">Select a category</option>';
+        
+        // Add filtered options
+        allCategories.forEach(category => {
+            if (!selectedType || category.type === selectedType) {
+                const option = new Option(category.text, category.value);
+                categorySelect.add(option);
+            }
+        });
+    }
+    
+    typeSelect.addEventListener('change', filterCategories);
+    
+    // Set today's date as default
+    const dateInput = document.getElementById('id_date');
+    if (!dateInput.value) {
+        dateInput.value = new Date().toISOString().split('T')[0];
+    }
+});
+</script>
+{% endblock %}

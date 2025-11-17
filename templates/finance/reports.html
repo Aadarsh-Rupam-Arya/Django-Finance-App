@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+
+{% block title %}Reports - Finance Manager{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h2><i class="fas fa-chart-bar me-2"></i>Financial Reports</h2>
+    <p class="text-muted">Analyze your spending patterns and financial trends</p>
+</div>
+
+<div class="row">
+    <!-- Expense by Category Chart -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-pie-chart me-2"></i>Expenses by Category</h5>
+            </div>
+            <div class="card-body">
+                {% if expense_by_category %}
+                    <canvas id="expenseChart" height="200"></canvas>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-chart-pie fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No expense data available</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Income vs Expense Trend -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-line-chart me-2"></i>12-Month Trend</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="trendChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Category Breakdown Table -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-table me-2"></i>Expense Breakdown</h5>
+    </div>
+    <div class="card-body">
+        {% if expense_by_category %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Total Amount</th>
+                            <th>Percentage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in expense_by_category %}
+                        <tr>
+                            <td>
+                                <i class="fas fa-tag me-2 text-muted"></i>
+                                {{ item.category__name }}
+                            </td>
+                            <td class="text-danger">
+                                ₹{{ item.total|floatformat:2 }}
+                            </td>
+                            <td>
+                                {% widthratio item.total expense_by_category.0.total 100 %}%
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-table fa-3x text-muted mb-3"></i>
+                <p class="text-muted">No expense data to display</p>
+                <a href="{% url 'add_transaction' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>Add Transaction
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Expense by Category Pie Chart
+    {% if expense_by_category %}
+    const expenseData = [
+        {% for item in expense_by_category %}
+        {
+            label: '{{ item.category__name }}',
+            value: {{ item.total|floatformat:2 }}
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+    
+    const expenseCtx = document.getElementById('expenseChart').getContext('2d');
+    new Chart(expenseCtx, {
+        type: 'doughnut',
+        data: {
+            labels: expenseData.map(item => item.label),
+            datasets: [{
+                data: expenseData.map(item => item.value),
+                backgroundColor: [
+                    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
+                    '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+    {% endif %}
+    
+    // Trend Chart
+    const trendData = {{ trend_data|safe }};
+    
+    const trendCtx = document.getElementById('trendChart').getContext('2d');
+    new Chart(trendCtx, {
+        type: 'line',
+        data: {
+            labels: trendData.map(item => item.month),
+            datasets: [{
+                label: 'Income',
+                data: trendData.map(item => item.income),
+                borderColor: '#28a745',
+                backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                tension: 0.4
+            }, {
+                label: 'Expenses',
+                data: trendData.map(item => item.expenses),
+                borderColor: '#dc3545',
+                backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '₹' + value.toFixed(0);
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top'
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
